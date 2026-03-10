@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 class Network:
     def __init__(self, sizes):
@@ -11,6 +12,31 @@ class Network:
         for b, w in zip(self.biases, self.weights):
             a = sigmoid(np.dot(w, a) + b)
         return a
+
+    def SDG(self, training_data, mini_batch_size, epoch, eta, test_data=None): # back propagation
+        if(test_data):
+            n_test = len(test_data)
+        
+        n = len(training_data)
+
+        for j in range(epoch):
+            random.shuffle(training_data)
+
+            # mini_batches = [training_data[k: k+mini_batch_size] for k in range(0, n, mini_batch_size)]
+            mini_batches = []
+            for k in range(0, n, mini_batch_size):
+                batch = training_data[k: k + mini_batch_size]
+                mini_batches.append(batch)
+
+            for mini_batch in mini_batches:
+                self.update_mini_batch(mini_batch, eta)
+
+            if test_data:
+                print("Epoch {0}: {1} / {2}").format(
+                    j, self.evaluate(test_data), n_test)
+            else:
+                print("Epoch {0} complete").format(j)
+
 
 def sigmoid(z):
     return 1.0 / (1.0 + np.exp(-z))
@@ -46,9 +72,6 @@ def output(network):
         print(f"  Bias sample (first 3): {network.biases[i-1].flatten()[:3]}")
         print(f"  Weight sample (first 3x3):\n{network.weights[i-1][:3, :3]}")
         print()
-
-def SDG(): # back propagation
-    pass
 
 
 def main():
