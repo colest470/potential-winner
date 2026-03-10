@@ -134,28 +134,28 @@ def output(network):
         print()
 
 
-def main():
-    sizes = [2, 3, 67, 45, 1]
-    print(f"Creating network with architecture: {sizes}")
+# def main():
+#     sizes = [2, 3, 67, 45, 1]
+#     print(f"Creating network with architecture: {sizes}")
     
-    deepNeuron = Network(sizes)
+#     deepNeuron = Network(sizes)
     
-    output(deepNeuron)
+#     output(deepNeuron)
     
-    print("\n" + "=" * 50)
-    print("TESTING WITH SAMPLE DATA")
-    print("=" * 50)
+#     print("\n" + "=" * 50)
+#     print("TESTING WITH SAMPLE DATA")
+#     print("=" * 50)
     
-    test_inputs = [
-        np.array([[0], [0]]),
-        np.array([[0], [1]]),
-        np.array([[1], [0]]),
-        np.array([[1], [1]])
-    ]
+#     test_inputs = [
+#         np.array([[0], [0]]),
+#         np.array([[0], [1]]),
+#         np.array([[1], [0]]),
+#         np.array([[1], [1]])
+#     ]
     
-    for i, test_input in enumerate(test_inputs):
-        output = deepNeuron.forward(test_input)
-        print(f"Input {test_input.flatten()} → Output: {output[0][0]:.6f}")
+#     for i, test_input in enumerate(test_inputs):
+#         output = deepNeuron.forward(test_input)
+#         print(f"Input {test_input.flatten()} → Output: {output[0][0]:.6f}")
 
-if __name__ == "__main__": 
-    main()
+# if __name__ == "__main__": 
+#     main()
