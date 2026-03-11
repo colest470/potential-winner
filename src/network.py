@@ -132,30 +132,3 @@ def output(network):
         print(f"  Bias sample (first 3): {network.biases[i-1].flatten()[:3]}")
         print(f"  Weight sample (first 3x3):\n{network.weights[i-1][:3, :3]}")
         print()
-
-
-# def main():
-#     sizes = [2, 3, 67, 45, 1]
-#     print(f"Creating network with architecture: {sizes}")
-    
-#     deepNeuron = Network(sizes)
-    
-#     output(deepNeuron)
-    
-#     print("\n" + "=" * 50)
-#     print("TESTING WITH SAMPLE DATA")
-#     print("=" * 50)
-    
-#     test_inputs = [
-#         np.array([[0], [0]]),
-#         np.array([[0], [1]]),
-#         np.array([[1], [0]]),
-#         np.array([[1], [1]])
-#     ]
-    
-#     for i, test_input in enumerate(test_inputs):
-#         output = deepNeuron.forward(test_input)
-#         print(f"Input {test_input.flatten()} → Output: {output[0][0]:.6f}")
-
-# if __name__ == "__main__": 
-#     main()
