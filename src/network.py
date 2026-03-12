@@ -13,32 +13,30 @@ class Network:
             a = sigmoid(np.dot(w, a) + b)
         return a
 
-    def SDG(self, training_data, mini_batch_size, epoch, eta, test_data=None): # back propagation
-        if(test_data):
-            n_test = len(test_data)
-        
+    def SGD(self, training_data, epochs, mini_batch_size, eta, test_data=None):
+        """Train the neural network using mini-batch stochastic
+        gradient descent.  The ``training_data`` is a list of tuples
+        ``(x, y)`` representing the training inputs and the desired
+        outputs.  The other non-optional parameters are
+        self-explanatory.  If ``test_data`` is provided then the
+        network will be evaluated against the test data after each
+        epoch, and partial progress printed out.  This is useful for
+        tracking progress, but slows things down substantially."""
+        if test_data: n_test = len(test_data)
         n = len(training_data)
-
-        for j in range(epoch):
+        for j in range(epochs):
             random.shuffle(training_data)
-
-            # mini_batches = [training_data[k: k+mini_batch_size] for k in range(0, n, mini_batch_size)]
-            mini_batches = []
-            for k in range(0, n, mini_batch_size):
-                batch = training_data[k: k + mini_batch_size]
-                mini_batches.append(batch)
-
+            mini_batches = [
+                training_data[k:k+mini_batch_size]
+                for k in range(0, n, mini_batch_size)]
             for mini_batch in mini_batches:
                 self.update_mini_batch(mini_batch, eta)
-
             if test_data:
-                print("Epoch {0}: {1} / {2}").format(
-                    j, self.evaluate(test_data), n_test)
+                print(f"Epoch {j}: {self.evaluate(test_data)} / {n_test}")
             else:
-                print("Epoch {0} complete").format(j)
-    
-    def update_mini_batch(self, mini_batch, eta):
+                print(f"Epoch {j} complete")
 
+    def update_mini_batch(self, mini_batch, eta):
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         for x, y in mini_batch:
@@ -90,7 +88,7 @@ class Network:
         network outputs the correct result. Note that the neural
         network's output is assumed to be the index of whichever
         neuron in the final layer has the highest activation."""
-        test_results = [(np.argmax(self.feedforward(x)), y) for (x, y) in test_data]
+        test_results = [(np.argmax(self.feedForward(x)), y) for (x, y) in test_data]
         return sum(int(x == y) for (x, y) in test_results)
 
     def cost_derivative(self, output_activations, y):
