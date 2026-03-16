@@ -32,11 +32,13 @@ class Network:
             for mini_batch in mini_batches:
                 self.update_mini_batch(mini_batch, eta)
             if test_data:
-                print(f"Epoch {j}: {self.evaluate(test_data)} / {n_test}")
+                evaluation = self.evaluate(test_data)
+                print(f"Epoch {j}: {evaluation} / {n_test}: {softmax(evaluation, n_test)}%")
             else:
                 print(f"Epoch {j} complete")
 
     def update_mini_batch(self, mini_batch, eta):
+
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         for x, y in mini_batch:
@@ -96,6 +98,9 @@ class Network:
         \partial a for the output activations."""
         return (output_activations-y)
 
+def softmax(j, evaluation):
+    return (j * 100 / evaluation)
+
 def sigmoid(z):
     return 1.0 / (1.0 + np.exp(-z))
 
@@ -129,4 +134,4 @@ def output(network):
         
         print(f"  Bias sample (first 3): {network.biases[i-1].flatten()[:3]}")
         print(f"  Weight sample (first 3x3):\n{network.weights[i-1][:3, :3]}")
-        print()
+        

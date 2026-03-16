@@ -3,7 +3,7 @@ from src import network
 import numpy as np
 
 def main():
-    sizes = [784, 100, 10]
+    sizes = [784, 10]
     print(f"Creating network with architecture: {sizes}")
     
     deepNeuron = network.Network(sizes)
@@ -14,9 +14,9 @@ def main():
 
     deepNeuron.SGD(training_data, 30, 10, 3.0, test_data=test_data)
     
-    print("\n" + "=" * 50)
-    print("TESTING WITH SAMPLE DATA")
-    print("=" * 50)
+    # print("\n" + "=" * 50)
+    # print("TESTING WITH SAMPLE DATA")
+    # print("=" * 50)
 
     
     # test_inputs = [
