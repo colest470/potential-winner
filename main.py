@@ -1,34 +1,47 @@
 from src import mnist_loader
-from src import network
+from src import network2
 import numpy as np
 
 def main():
-    sizes = [784, 10]
-    print(f"Creating network with architecture: {sizes}")
+    # sizes = [784, 10]
+    # print(f"Creating network with architecture: {sizes}")
     
-    deepNeuron = network.Network(sizes)
+    # deepNeuron = network2.Network(sizes)
     
-    network.output(deepNeuron)
+    # network2.output(deepNeuron)
 
+    # training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
+
+    # deepNeuron.SGD(training_data, 30, 10, 3.0, test_data=test_data)
+
+    # 1. Load the data using the loader
     training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
 
-    deepNeuron.SGD(training_data, 30, 10, 3.0, test_data=test_data)
+    # 2. Define architecture (784 inputs for MNIST pixels, 30 hidden, 10 outputs)
+    sizes = [784, 30, 10]
+    print(f"Creating network with architecture: {sizes}")
     
-    # print("\n" + "=" * 50)
-    # print("TESTING WITH SAMPLE DATA")
-    # print("=" * 50)
+    # 3. Initialize the network
+    # Note: Default cost is CrossEntropyCost in network2.py
+    deepNeuron = network2.Network(sizes)
+    
+    # 4. Initiate Stochastic Gradient Descent (SGD)
+    # Parameters: data, epochs, mini_batch_size, learning_rate (eta), regularization (lmbda)
+    deepNeuron.SGD(
+        training_data, 
+        epochs=30, 
+        mini_batch_size=10, 
+        eta=0.5, 
+        lmbda=5.0, 
+        evaluation_data=test_data,
+        monitor_evaluation_accuracy=True,
+        monitor_evaluation_cost=True,
+        monitor_training_accuracy=True,
+        monitor_training_cost=True
+    )
 
-    
-    # test_inputs = [
-    #     np.array([[0], [0]]),
-    #     np.array([[0], [1]]),
-    #     np.array([[1], [0]]),
-    #     np.array([[1], [1]])
-    # ]
-    
-    # for i, test_input in enumerate(test_inputs):
-    #     output = deepNeuron.forward(test_input)
-    #     print(f"Input {test_input.flatten()} → Output: {output[0][0]:.6f}")
+    # 5. Save the trained model if you want to use it later
+    deepNeuron.save("my_trained_network.json")
 
 if __name__ == "__main__": 
     main()
