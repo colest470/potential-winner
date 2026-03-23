@@ -78,6 +78,28 @@ class Network(object):
         method).
 
         """
+
+        try:
+            with open("my_trained_network.json", "r") as file:
+                jsonData = json.load(file)
+
+            isSame = False
+
+            for index, layer in enumerate(jsonData["sizes"]):
+                if(sizes[index] == layer):
+                    isSame = True
+                else :
+                    isSame = False
+                    break
+
+            if(isSame):
+                load(jsonData)
+        except FileExistsError:
+            print("No pre-trained model")
+        except PermissionError:
+            print("no permission allowed opening the file!")
+            return
+
         self.num_layers = len(sizes)
         self.sizes = sizes
         self.default_weight_initializer()
@@ -296,19 +318,19 @@ class Network(object):
         f.close()
 
 #### Loading a Network
-def load(filename):
+def load(data):
     """Load a neural network from the file ``filename``.  Returns an
     instance of Network.
 
     """
-    f = open(filename, "r")
-    data = json.load(f)
-    f.close()
     cost = getattr(sys.modules[__name__], data["cost"])
     net = Network(data["sizes"], cost=cost)
     net.weights = [np.array(w) for w in data["weights"]]
     net.biases = [np.array(b) for b in data["biases"]]
     return net
+
+def test():
+    pass
 
 #### Miscellaneous functions
 def vectorized_result(j):

@@ -236,6 +236,9 @@ class ConvPoolLayer(object):
 class FullyConnectedLayer(object):
 
     def __init__(self, n_in, n_out, activation_fn=sigmoid, p_dropout=0.0):
+        if():
+            
+
         self.n_in = n_in
         self.n_out = n_out
         self.activation_fn = activation_fn
