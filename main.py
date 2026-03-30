@@ -24,10 +24,6 @@ def main():
     # 3. Initialize the network
     # Note: Default cost is CrossEntropyCost in network2.py
     deepNeuron = network2.Network(sizes)
-
-    if(deepNeuron == 0):
-        print(f"There is already a trained model with the sizes{sizes} already in the file /my_trained_network.json")
-        return
     
     # 4. Initiate Stochastic Gradient Descent (SGD)
     # Parameters: data, epochs, mini_batch_size, learning_rate (eta), regularization (lmbda)

@@ -16,9 +16,7 @@ features.
 import json
 import random
 import sys
-import mnist_loader
-
-# Third-party libraries
+from . import mnist_loader
 import numpy as np
 
 
@@ -67,7 +65,6 @@ class CrossEntropyCost(object):
 
 #### Main Network class
 class Network(object):
-
     def __init__(self, sizes, cost=CrossEntropyCost):
         """The list ``sizes`` contains the number of neurons in the respective
         layers of the network.  For example, if the list was [2, 3, 1]
@@ -98,13 +95,16 @@ class Network(object):
                     break
 
             if(isSame):
-                self = load(jsonData)
+                cost = getattr(sys.modules[__name__], jsonData["cost"])
+                self.weights = [np.array(w) for w in jsonData["weights"]]
+                self.biases = [np.array(b) for b in jsonData["biases"]]
+                self.cost = cost
 
-                _, _, test_data = mnist_loader.load_data()
+                _, _, test_data = mnist_loader.load_data_wrapper()
 
                 test(self, test_data, 10)
                 return
-        except FileExistsError:
+        except FileNotFoundError:
             print("No pre-trained model")
         except PermissionError:
             print("no permission allowed opening the file!")
@@ -338,9 +338,6 @@ def test(network, data, n):
     Selects n random images from 'data', runs them through the network,
     and displays a visual representation of the image and the result.
     """
-    print("\n" + "="*50)
-    print(f" RUNNING TEST ON {n} RANDOM SAMPLES")
-    print("="*50 + "\n")
 
     # Select n random samples from the dataset
     samples = random.sample(data, n)
@@ -349,31 +346,22 @@ def test(network, data, n):
         # Determine the actual label (handles both vectorized and int labels)
         actual_label = y if isinstance(y, (int, np.integer)) else np.argmax(y)
         
-        # Get network prediction
         output_activations = network.feedforward(x)
         prediction = np.argmax(output_activations)
         confidence = output_activations[prediction][0] * 100
 
-        # Create a small ASCII visualization of the 28x28 image
-        # We downsample/threshold it to make it fit in the console
         image_pixels = x.reshape(28, 28)
         ascii_img = ""
-        for row in range(0, 28, 2): # Skip rows/cols to keep it small
+        for row in range(0, 28, 2): 
             for col in range(0, 28, 2):
-                char = "█" if image_pixels[row][col] > 0.5 else "░"
+                char = "█" if image_pixels[row][col] > 0.5 else " "
                 ascii_img += char
             ascii_img += "\n"
 
-        # Display results
-        print(f"TEST CASE #{i+1}")
+        print(f"TEST: {i+1}")
         print(ascii_img)
-        print(f"Result: {'✅ MATCH' if prediction == actual_label else '❌ MISMATCH'}")
         print(f"Network Prediction: {prediction} ({confidence:.2f}% confidence)")
-        print(f"Actual Label:       {actual_label}")
-        print("-" * 30)
-
-# To use this, you would call it after training or loading:
-# test(net, test_data, n=5)
+        print(f"Actual Label:{actual_label}")
 
 #### Miscellaneous functions
 def vectorized_result(j):
