@@ -18,6 +18,7 @@ import random
 import sys
 from . import mnist_loader
 import numpy as np
+import os
 
 
 #### Define the quadratic and cross-entropy cost functions
@@ -48,7 +49,6 @@ class CrossEntropyCost(object):
         in the same slot, then the expression (1-y)*np.log(1-a)
         returns nan.  The np.nan_to_num ensures that that is converted
         to the correct value (0.0).
-
         """
         return np.sum(np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a)))
 
@@ -58,56 +58,43 @@ class CrossEntropyCost(object):
         parameter ``z`` is not used by the method.  It is included in
         the method's parameters in order to make the interface
         consistent with the delta method for other cost classes.
-
         """
         return (a-y)
 
 
 #### Main Network class
 class Network(object):
-    def __init__(self, sizes, cost=CrossEntropyCost):
-        """The list ``sizes`` contains the number of neurons in the respective
-        layers of the network.  For example, if the list was [2, 3, 1]
-        then it would be a three-layer network, with the first layer
-        containing 2 neurons, the second layer 3 neurons, and the
-        third layer 1 neuron.  The biases and weights for the network
-        are initialized randomly, using
-        ``self.default_weight_initializer`` (see docstring for that
-        method).
-        """
+    class Network(object):
+        def __init__(self, sizes, cost=CrossEntropyCost):
+            self.num_layers = len(sizes)
+            self.sizes = sizes
+            self.default_weight_initializer()
+            self.cost = cost
+            self.loaded_from_file = False
 
-        self.num_layers = len(sizes)
-        self.sizes = sizes
-        self.default_weight_initializer()
-        self.cost=cost
+            try:
+                with open("my_trained_network.json", "r") as file:
+                    history = json.load(file) 
+                    
+                if not isinstance(history, list):
+                    history = [history]
 
-        try:
-            with open("my_trained_network.json", "r") as file:
-                jsonData = json.load(file)
+                for jsonData in reversed(history):
+                    if jsonData["sizes"] == self.sizes:
+                        print("Found matching architecture in history. Loading...")
+                        
+                        self.cost = getattr(sys.modules[__name__], jsonData["cost"])
+                        self.weights = [np.array(w) for w in jsonData["weights"]]
+                        self.biases = [np.array(b) for b in jsonData["biases"]]
+                        
+                        self.loaded_from_file = True
+                        break
+                
+                if not self.loaded_from_file:
+                    print("No matching architecture found in save history.")
 
-            isSame = False
-
-            for index, layer in enumerate(jsonData["sizes"]):
-                if(sizes[index] == layer):
-                    isSame = True
-                else :
-                    isSame = False
-                    break
-
-            if(isSame):
-                cost = getattr(sys.modules[__name__], jsonData["cost"])
-                self.weights = [np.array(w) for w in jsonData["weights"]]
-                self.biases = [np.array(b) for b in jsonData["biases"]]
-                self.cost = cost
-
-                _, _, test_data = mnist_loader.load_data_wrapper()
-
-                test(self, test_data, 10)
-                return
-        except FileNotFoundError:
-            print("No pre-trained model")
-        except PermissionError:
-            print("no permission allowed opening the file!")
+            except (FileNotFoundError, json.JSONDecodeError):
+                print("No valid pre-trained model history found.")
 
     def default_weight_initializer(self):
         """Initialize each weight using a Gaussian distribution with mean 0
@@ -120,7 +107,6 @@ class Network(object):
         by convention we won't set any biases for those neurons, since
         biases are only ever used in computing the outputs from later
         layers.
-
         """
         self.biases = [np.random.randn(y, 1) for y in self.sizes[1:]]
         self.weights = [np.random.randn(y, x)/np.sqrt(x)
@@ -311,15 +297,29 @@ class Network(object):
             np.linalg.norm(w)**2 for w in self.weights)
         return cost
 
-    def save(self, filename):
-        """Save the neural network to the file ``filename``."""
-        data = {"sizes": self.sizes,
-                "weights": [w.tolist() for w in self.weights],
-                "biases": [b.tolist() for b in self.biases],
-                "cost": str(self.cost.__name__)}
-        f = open(filename, "w")
-        json.dump(data, f)
-        f.close()
+def save(self, filename):
+    new_data = {
+        "sizes": self.sizes,
+        "weights": [w.tolist() for w in self.weights],
+        "biases": [b.tolist() for b in self.biases],
+        "cost": str(self.cost.__name__)
+    }
+
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
+            try:
+                history = json.load(f)
+                if not isinstance(history, list):
+                    history = [history]
+            except json.JSONDecodeError:
+                history = []
+    else:
+        history = []
+
+    history.append(new_data)
+
+    with open(filename, "w") as f:
+        json.dump(history, f)
 
 #### Loading a Network
 def load(data):
