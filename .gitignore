@@ -2,3 +2,4 @@ dlnn_env
 my_trained_network.json
 best_model.pth
 model.pth
+my_trained_network4.pth
