@@ -1,5 +1,5 @@
 from src import mnist_loader
-from src import network2
+from src import network4
 import numpy as np
 
 def main():
@@ -23,7 +23,7 @@ def main():
     
     # 3. Initialize the network
     # Note: Default cost is CrossEntropyCost in network2.py
-    deepNeuron = network2.Network(sizes)
+    deepNeuron = network4.Network(sizes)
 
     if(deepNeuron.loaded_from_file == True):
         print(f"Already a network with the same architecture exists!")
