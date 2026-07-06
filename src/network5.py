@@ -6,6 +6,9 @@ import numpy as np
 import mnist_loader
 from torch.utils.data import DataLoader, TensorDataset
 import random
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, classification_report
+import seaborn as sns
 
 class ClassificationNN(nn.Module):
     def __init__(self, input_value):
@@ -106,6 +109,7 @@ def getShape(model):
             shape.append(layer.out_features)
     return shape
 
+# Load existing model if available
 print("Checking architecture and saved models")
 try:
     saved_state_dict = torch.load("my_trained_network4.pth", map_location=torch.device('cpu'))
@@ -117,6 +121,11 @@ except FileNotFoundError:
 except Exception as e:
     print(f"Error loading model: {e}")
 
+# Store training history for plotting
+train_losses = []
+val_accuracies = []
+
+# Training loop
 print("\nStarting training...")
 for epoch in range(num_epochs):
     model.train()
@@ -130,22 +139,121 @@ for epoch in range(num_epochs):
         optimizer.step()
         running_loss += loss.item()
     
+    avg_loss = running_loss / len(train_loader)
+    train_losses.append(avg_loss)
+    
+    # Calculate validation accuracy for each epoch
+    model.eval()
+    with torch.no_grad():
+        val_output = model(validationDataTensor)
+        _, predicted = torch.max(val_output, 1)
+        accuracy = (predicted == validationLabelsTensor).float().mean()
+        val_accuracies.append(accuracy.item())
+    
     if (epoch + 1) % 5 == 0:
-        avg_loss = running_loss / len(train_loader)
-        print(f"Epoch: {epoch+1}/{num_epochs} - Loss: {avg_loss:.4f}")
+        print(f"Epoch: {epoch+1}/{num_epochs} - Loss: {avg_loss:.4f} - Val Acc: {accuracy.item()*100:.2f}%")
 
+# Final validation
 model.eval()
 with torch.no_grad():
     val_output = model(validationDataTensor)
     _, predicted = torch.max(val_output, 1)
-    accuracy = (predicted == validationLabelsTensor).float().mean()
-    print(f"\nValidation Accuracy: {accuracy.item()*100:.2f}%")
+    final_accuracy = (predicted == validationLabelsTensor).float().mean()
+    print(f"\n Final Validation Accuracy: {final_accuracy.item()*100:.2f}%")
     
-    model.save("my_trained_network4.pth")
+    # Save the trained model
+    model.save("my_trained_network5.pth")
     print("Model saved successfully!")
 
 test_network(model, test_data, n=10, scaler=scaler)
 
+# Show sample predictions on validation set
 print("Sample predictions (first 10 validation images):")
 for i in range(10):
     print(f"Predicted: {predicted[i].item()}, Actual: {validationLabelsTensor[i].item()}")
+
+print("Generating result visualizations...")
+
+# Create a figure with multiple subplots
+fig = plt.figure(figsize=(15, 10))
+
+# 1. Training Loss vs Epochs
+plt.subplot(2, 2, 1)
+plt.plot(range(1, num_epochs+1), train_losses, 'b-', linewidth=2)
+plt.xlabel('Epochs', fontsize=12)
+plt.ylabel('Training Loss', fontsize=12)
+plt.title('Training Loss vs Epochs', fontsize=14, fontweight='bold')
+plt.grid(True, alpha=0.3)
+plt.xticks(range(0, num_epochs+1, 5))
+
+# 2. Validation Accuracy vs Epochs
+plt.subplot(2, 2, 2)
+plt.plot(range(1, num_epochs+1), np.array(val_accuracies)*100, 'g-', linewidth=2)
+plt.xlabel('Epochs', fontsize=12)
+plt.ylabel('Validation Accuracy (%)', fontsize=12)
+plt.title('Validation Accuracy vs Epochs', fontsize=14, fontweight='bold')
+plt.grid(True, alpha=0.3)
+plt.xticks(range(0, num_epochs+1, 5))
+plt.ylim([0, 105])
+
+# 3. Confusion Matrix
+plt.subplot(2, 2, 3)
+with torch.no_grad():
+    all_predictions = []
+    all_labels = []
+    
+    # Get predictions for validation set
+    val_output = model(validationDataTensor)
+    _, predicted_all = torch.max(val_output, 1)
+    
+    # Convert to numpy for sklearn
+    predicted_np = predicted_all.cpu().numpy()
+    actual_np = validationLabelsTensor.cpu().numpy()
+    
+    cm = confusion_matrix(actual_np, predicted_np)
+    
+    # Plot confusion matrix
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                xticklabels=range(10), yticklabels=range(10))
+    plt.title('Confusion Matrix - Validation Set', fontsize=14, fontweight='bold')
+    plt.xlabel('Predicted Label', fontsize=12)
+    plt.ylabel('Actual Label', fontsize=12)
+
+# 4. Classification Report as Bar Chart
+plt.subplot(2, 2, 4)
+report = classification_report(actual_np, predicted_np, output_dict=True)
+class_accuracies = [report[str(i)]['precision'] for i in range(10)]
+bars = plt.bar(range(10), class_accuracies, color='orange', alpha=0.7)
+plt.xlabel('Digit Class', fontsize=12)
+plt.ylabel('Precision Score', fontsize=12)
+plt.title('Precision per Class', fontsize=14, fontweight='bold')
+plt.xticks(range(10))
+plt.ylim([0, 1.05])
+# Add value labels on bars
+for bar, acc in zip(bars, class_accuracies):
+    height = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2., height + 0.01,
+             f'{acc:.2f}', ha='center', va='bottom', fontsize=10)
+
+plt.tight_layout()
+plt.savefig('training_results.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+# Print additional statistics
+print("FINAL MODEL PERFORMANCE SUMMARY")
+print(f"Best Validation Accuracy: {max(val_accuracies)*100:.2f}%")
+print(f"Final Validation Accuracy: {val_accuracies[-1]*100:.2f}%")
+print(f"Final Training Loss: {train_losses[-1]:.4f}")
+print(f"Confusion Matrix saved in plot above")
+print("\nClassification Report per class:")
+for i in range(10):
+    print(f"  Class {i}: Precision={report[str(i)]['precision']:.3f}, "
+          f"Recall={report[str(i)]['recall']:.3f}, "
+          f"F1={report[str(i)]['f1-score']:.3f}")
+
+print(f"\nOverall Accuracy: {report['accuracy']*100:.2f}%")
+print(f"Macro Avg F1: {report['macro avg']['f1-score']:.3f}")
+print(f"Weighted Avg F1: {report['weighted avg']['f1-score']:.3f}")
+
+# Save the plot
+print(f"\n Plot saved as 'training_results.png'")

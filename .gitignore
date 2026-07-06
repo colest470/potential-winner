@@ -3,3 +3,14 @@ my_trained_network.json
 best_model.pth
 model.pth
 my_trained_network4.pth
+data
+fig
+notes.txt
+training_results.png
+my_trained_network4.pth
+my_trained_network5.pth
+.gitignore
+my_trained_network.py
+my_trained_network2.py
+my_trained_network3.py
+my_trained_network.py
