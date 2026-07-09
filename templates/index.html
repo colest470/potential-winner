@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Digit Classifier</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 32px; }
+      .container { max-width: 720px; margin: 0 auto; }
+      .card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+      .result { margin-top: 20px; font-size: 20px; }
+      .error { color: #b00; margin-top: 20px; }
+      img { max-width: 320px; border: 1px solid #ccc; margin-top: 12px; }
+      button { padding: 10px 18px; font-size: 16px; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Handwritten Digit Classifier</h1>
+      <div class="card">
+        <p>Upload a real image of a handwritten digit, and the neural network will classify it as 0–9.</p>
+        <form action="/" method="post" enctype="multipart/form-data">
+          <input type="file" name="image" accept="image/*" required>
+          <br><br>
+          <button type="submit">Classify Image</button>
+        </form>
+
+        {% if prediction is not none %}
+          <div class="result">Prediction: <strong>{{ prediction }}</strong></div>
+        {% endif %}
+
+        {% if image_data %}
+          <div><img src="data:image/png;base64,{{ image_data }}" alt="Uploaded image"></div>
+        {% endif %}
+
+        {% if error %}
+          <div class="error">{{ error }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>
