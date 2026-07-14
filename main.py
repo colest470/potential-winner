@@ -76,13 +76,14 @@ def main():
     file_paths = []
 
     for label in range(10):
+        path = kagglehub.dataset_download("olafkrastovski/handwritten-digits-0-9")
         folder = os.path.join(base_path, str(label))
 
         for ext in extensions:
             for filename in glob.glob(os.path.join(folder, ext)):
                 file_paths.append((filename, label))
 
-    if len(file_paths):
+    if len(file_paths) == 0:
         print("Found no dataset downloaded!")
 
         base_path = kagglehub.dataset_download("olafkrastovski/handwritten-digits-0-9")
