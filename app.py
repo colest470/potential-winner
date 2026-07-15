@@ -1,44 +1,123 @@
-import base64
-import io
-from flask import Flask, render_template, request
-from PIL import Image
-import src.network5 as network5
+import kagglehub
+import os
+import tensorflow as tf
+from matplotlib import pyplot as plt
+import numpy as np
 
-app = Flask(__name__)
+path = "./kaggle/input/handwritten-digits-0-9/"
+saved_model_path = "./european_digits_model.keras"
 
-try:
-    model = network5.load_trained_model("my_trained_network5.pth")
-    scaler = network5.build_scaler()
-except FileNotFoundError:
-    model = None
-    scaler = None
+def laod():
+    if os.path.exists("./european_digits_model.keras"):
+        model = tf.keras.models.load_model("./european_digits_model.keras")
+        print(f"Model loaded from {saved_model_path}")
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    prediction = None
-    image_data = None
-    error = None
+        model.summary()
 
-    if request.method == 'POST':
-        uploaded_file = request.files.get('image')
-        if not uploaded_file:
-            error = 'No image uploaded.'
-        elif model is None:
-            error = 'Model not loaded. Please start the app after placing my_trained_network5.pth in the project root.'
+        return model
+
+    if os.path.exists(path) == False:
+        path = kagglehub.dataset_download("olafkrastovski/handwritten-digits-0-9")
+        train_model()
+
+def train_model():
+    training_dt = tf.keras.util.image_dataset_from_directory(
+        subset="training",
+        validation_split=0.2,
+        shuffle=True,
+        label="inferred",
+        label_mode="int",
+        seed=42
+    )
+
+    validation_dt = tf.keras.util.image_dataset_from_directory(
+        subset="validation",
+        validation_split=0.2,
+        label="inferred",
+        label_mode="int",
+        shuffle=True,
+        seed=42
+    )
+
+    model = tf.keras.models.Sequential([
+        tf.keras.layers.Rescalling(1./255, (128, 128, 3)),
+        tf.keras.layers.Conv2D(16, 3, padding="same", activation="relu"),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Conv2D(32, 3, padding="same", activation="relu"),
+        tf.keras.layers.MaxPooling2d(),
+        tf.keras.layers.Conv2D(64, 3, padding="same", activation="relu"),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Conv2D(128, 3, padding="same", activation="relu"),
+
+        tf.keras.layers.Dense(16, activation="relu"),
+        tf.keras.layers.Dense(64, activation="relu"),
+        tf.keras.layers.Dense(128, activation="relu"),
+        tf.keras.layers.Dropout(0.2),
+        tf.keras.layers.Dense(64, activation="relu"),
+        tf.keras.layers.Dense(10, activation="softmax")
+    ])
+
+    epoch = 5
+
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learnin_rate=0.001),
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False), # because of softmax in last layer
+        metrics=["accuracy"]
+    )
+
+    def decay():
+        if epoch >= 3:
+            return 1e-3
+        elif epoch >= 2:
+            return 1e-4
         else:
-            try:
-                image = Image.open(uploaded_file.stream)
-                prediction = network5.predict_image(image, model, scaler=scaler)
+            return 1e-5
+        
+    lr_decay = tf.keras.callbacks.LearningRateScheduler(decay)
 
-                buffer = io.BytesIO()
-                image.convert('RGB').save(buffer, format='PNG')
-                image_data = base64.b64encode(buffer.getvalue()).decode('utf-8')
-            except Exception as exc:
-                error = f'Unable to process image: {exc}'
+    history = model.fit(training_dt, validation_dt, epoch, callback=[lr_decay])
 
-    return render_template('index.html', prediction=prediction, image_data=image_data, error=error)
+    acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
 
-if __name__ == '__main__':
-    if model is None:
-        raise RuntimeError('No trained model available. Train and save my_trained_network5.pth first.')
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    epochs_range = range(epoch)
+
+    plt.figure(figsize=(10, 4))
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs_range, acc, label='Training Accuracy')
+    plt.plot(epochs_range, val_acc, label='Validation Accuracy')
+    plt.legend(loc='lower right')
+    plt.title('Training and Validation Accuracy')
+
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs_range, loss, label='Training Loss')
+    plt.plot(epochs_range, val_loss, label='Validation Loss')
+    plt.legend(loc='upper right')
+    plt.title('Training and Validation Loss')
+    plt.show()
+
+def load_and_preprocess_image(image_path, size=(128, 128)):
+  img = tf.keras.utils.load_img(image_path, target_size=size)
+  img_arr = tf.keras.utils.img_to_array(img)
+  img_batch = tf.expand_dims(img_arr, 0)
+
+  return img_batch, img_arr
+
+img_batch, img_display = load_and_preprocess_image("/content/seven1.jpeg", size=(128, 128))
+
+if __name__ == "__main__":
+    saved_model = load()
+    predictions = saved_model.predict(img_batch, verbose=0)
+    predicted_class_idx = np.argmax(predictions[0])
+
+    print(predicted_class_idx)
+    print(f"Predicted Label: {predicted_class_idx}")
+
+    plt.figure(figsize=(4, 4))
+    plt.imshow(img_display.astype("uint8"))
+    color = 'black'
+    plt.title(f"Predicted: {predicted_class_idx}", color=color)
+    plt.axis("off")
+    plt.show()
